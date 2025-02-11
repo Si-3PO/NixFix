@@ -1,0 +1,3 @@
+#!/bin/sh
+host=$(hostname)
+echo "$(tput -T xterm setaf 5)$(tput -T xterm setab 7) ~ Welcome to $host ~$(tput -T xterm rev)$(tput -T xterm sgr0)\n"
