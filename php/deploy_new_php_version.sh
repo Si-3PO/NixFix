@@ -35,3 +35,6 @@ fi
 sudo a2enconf php$newversion-fpm
 sudo systemctl reload apache2
 sudo systemctl status php$newversion
+
+# Match CLI to version
+sudo update-alternatives --set php /usr/bin/php$newversion
