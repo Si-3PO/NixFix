@@ -12,9 +12,24 @@ function runrabbit() {
 sudo run-parts /etc/update-motd.d/
 }
 
-function pssh () {
-parallel-ssh -h ~/"multi-ssh.txt" -i "$1"
-}
+# TMUX #
+#Init TMUX environment on SSH login
+: '
+if [[ ! command -v tmux &> /dev/null ]]; then 
+  apt install tmux -y
+elif [[ $- =~ i ]] && [[ -z "$TMUX" ]] && [[ -n "$SSH_TTY" ]]; then
+  tmux new-session -d -A -s session -n "main" \; \
+    new-window -t session:2 -n "multi" \; \
+    split-window -v \; \
+    split-window -h \; \
+    select-pane -t 0 \; \
+    split-window -h \; \
+    attach-session -t session \; \
+    setw synchronize-panes on \; \
+    new-window -t session:3 -n "diff" \; \
+    split-window -h \;
+fi
+'
 
 # Consider splitting out the following into bash dependancies
 # include .bash{dependency} if it exists

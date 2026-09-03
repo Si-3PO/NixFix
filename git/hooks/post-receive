@@ -1,0 +1,23 @@
+#!/bin/bash
+#For debugging
+#set -ex
+
+# The work tree, where the checkout/deploy should happen
+TARGET="/webdir/{project}/public"
+
+# the location of the .git directory
+GIT_DIR="/repo/{project}/.git"
+
+BRANCH="master"
+
+while read oldrev newrev ref
+do
+        # only checking out the master (or whatever branch you would like to deploy)
+        if [ "$ref" = "refs/heads/$BRANCH" ];
+        then
+                echo "Ref $ref received. Deploying ${BRANCH} branch on server..."
+                git --work-tree="${TARGET}" --git-dir="${GIT_DIR}" checkout -f ${BRANCH}
+        else
+                echo "Ref $ref received. Doing nothing: only the ${BRANCH} branch may be deployed on this server."
+        fi
+done
