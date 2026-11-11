@@ -12,6 +12,10 @@ function runrabbit() {
 sudo run-parts /etc/update-motd.d/
 }
 
+function watchstatus() {
+sudo watch -c SYSTEMD_COLORS=1 systemctl status $1 
+}
+
 # TMUX #
 #Init TMUX environment on SSH login
 : '

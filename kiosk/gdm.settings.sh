@@ -14,6 +14,10 @@ try tee /etc/dconf/db/local.d/00-custom << 'EOF'
 sleep-interactive-ac-timeout=0
 idle-brightness=0
 idle-dim=false
+ambient-enabled=false
+sleep-inactive-ac-type='nothing'
+sleep-inactive-battery-type='suspend'
+screen-brightness=100
 
 [org/gnome/desktop/session]
 idle-delay=uint32 0

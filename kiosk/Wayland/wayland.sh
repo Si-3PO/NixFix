@@ -20,6 +20,7 @@ next
 step "Wayland User"
 try mkdir -p /home/display/.local/bin/
 try cp "${workingdir}/kiosk/Wayland/gnome-kiosk-script" /home/display/.local/bin/gnome-kiosk-script
+try ln -s /home/display/.local/bin/gnome-kiosk-script gnome-kiosk-script
 try chmod +x /home/display/.local/bin/gnome-kiosk-script
 try chown -R display:display /home/display
 next

@@ -9,14 +9,12 @@ workingdir="$(realpath $(dirname "$0"))"
 . "${workingdir}/framework.sh"
 
 # Load INI
-step "Load env"
 read -p "Select env ini file: " inifile
 if [ -f "${workingdir}/${inifile}" ]; then
-    try source <(grep = ${inifile})
+    source <(grep = ${inifile})
 else 
     echo_failure "unable to locate ${inifile}"
 fi
-next
 
 #-----------------#
 # Kiosk Builder 
@@ -39,6 +37,37 @@ try chmod 754 /etc/skel/.config/gnome-initial-setup-done
 try apt-get purge -y -qq gnome-initial-setup
 next
 
+step "Install safety"
+try systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target ctrl-alt-del.target
+try systemctl stop unattended-upgrades
+try systemctl daemon-reload
+next
+
+step "Timezone"
+do=true
+try timedatectl list-timezones | grep -E "America|Europe"
+while $do; do
+    echo -n "Set Timezone: "
+    read -r timezone
+    try timedatectl set-timezone ${timezone}
+    if [ $? -eq 0 ]; then
+        do=false
+    fi
+done
+next
+
+step "Run patches"
+try apt-get -qq update
+try apt-get -y -qq upgrade
+next
+
+echo -n "Enable kiosk functionality? [y/N]: "
+read -n 1 -r kiosk
+echo
+if [[ $kiosk =~ ^[Yy]$ ]]; then
+    apt-get install -y ubuntu-desktop-minimal
+fi 
+
 #-----------------#
 # Users
 #-----------------#
@@ -46,9 +75,7 @@ next
 step "Users"
 # Select primary Admin User. 
 admin=$( id -nu 1000 )
-try mkdir -p /etc/skel/.config
-try touch /etc/skel/.config/gnome-initial-setup-done
-
+try mkdir -p /var/lib/AccountsService/users
 
 # Add user 'deployment':
 try $( id -u deployment &>/dev/null || adduser --disabled-password --gecos "" deployment &>/dev/null )
@@ -88,12 +115,6 @@ next
 # Prep
 #-----------------#
 
-step "Install safety"
-try systemctl mask sleep.target suspend.target hibernate.target hybrid-sleep.target ctrl-alt-del.target
-try systemctl stop unattended-upgrades
-try systemctl daemon-reload
-next
-
 step "Install-grub"
 try sed -i 's/GRUB_TIMEOUT=.*/GRUB_TIMEOUT=0/g' /etc/default/grub
 try sed -i 's/GRUB_TIMEOUT_STYLE=.*/GRUB_TIMEOUT_STYLE=hidden/g' /etc/default/grub
@@ -104,11 +125,6 @@ next
 step "TimeSync"
 try timedatectl set-ntp true
 try systemctl restart chrony
-next
-
-step "Run patches"
-try apt-get -qq update
-try apt-get -y -qq upgrade
 next
 
 #-----------------#
@@ -245,12 +261,10 @@ try chmod ug+wx "/opt/repos/post-receive"
 next
 
 #-----------------#
-# Kiosk
+# Kiosk Settings
 #-----------------#
 
-read -p "Enable kiosk functionality? [y/N] " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
+if [[ $kiosk =~ ^[Yy]$ ]]; then
     . "${workingdir}/kiosk/kiosk.sh"
 fi
 
@@ -262,7 +276,11 @@ step "Out"
 try apt-get autoremove -y -qq
 #try apt -o=Dpkg::Use-Pty=0 -y -qq autoremove
 try echo "Device IP: " && hostname -I
-try systemctl start unattended-upgrades
+if [[ $kiosk =~ ^[Yy]$ ]]; then 
+    try systemctl disable --now unattended-upgrades
+else 
+    try systemctl start unattended-upgrades
+fi
 try systemctl daemon-reload
 next 
 

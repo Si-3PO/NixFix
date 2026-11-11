@@ -1,9 +1,11 @@
 #!/bin/bash
 while true; do
     #Web
-    chromium --no-first-run --disable --disable-infobars --disable-translate --ozone-platform=wayland --enable-features=UseOzonePlatform --kiosk "http://localhost"
+    chromium --kiosk --incognito --noerrdialogs --disable-session-crashed-bubble --no-first-run --disable-translate --ozone-platform=wayland --enable-features=UseOzonePlatform --kiosk "http://localhost"
     #Image
-    #feh -xF ${target} &
+    #feh -xF --hide-pointer ${target} &
+    # SVG
+    #feh -xF --hide-pointer --conversion-timeout 1 ${target} &
     #Video
     #mpv --geometry=100%x100%+0+0 --loop --no-osc --no-input-default-bindings ${target} &
     sleep 2
