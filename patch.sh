@@ -14,6 +14,7 @@ if [ -f "${workingdir}/${inifile}" ]; then
     source <(grep = ${inifile})
 else 
     echo_failure "unable to locate ${inifile}"
+    read -p "Manually set Domain: " domain
 fi
 
 #-----------------#
@@ -77,6 +78,10 @@ step "Users"
 admin=$( id -nu 1000 )
 try mkdir -p /var/lib/AccountsService/users
 
+echo -n "Enable git silent deploy user functionality? [y/N]: "
+read -n 1 -r deployuser
+echo
+if [[ $deployuser =~ ^[Yy]$ ]]; then
 # Add user 'deployment':
 try $( id -u deployment &>/dev/null || adduser --disabled-password --gecos "" deployment &>/dev/null )
 try cat > /var/lib/AccountsService/users/deployment << EOF
@@ -84,7 +89,9 @@ try cat > /var/lib/AccountsService/users/deployment << EOF
 Language=
 SystemAccount=true  
 EOF
+fi
 
+if [[ $kiosk =~ ^[Yy]$ ]]; then
 # Add user 'display'
 try $( id -u display &>/dev/null || adduser --disabled-password --gecos "" display &>/dev/null )
 try cat > /var/lib/AccountsService/users/display << EOF
@@ -95,6 +102,7 @@ EOF
 # Depreciated due to :143 /etc/skel? 
 # try mkdir -p /home/display/.config 
 next
+fi
 
 #-----------------#
 # Groups
@@ -143,19 +151,20 @@ try cp "${workingdir}/buildinit/etc/ssh/socket.conf" /etc/systemd/system/ssh.soc
 try systemctl daemon-reload
 try systemctl restart ssh.socket
 
+if [ ! -z "$adminkey" ]; then
 try mkdir -p /home/${admin}/.ssh /home/deployment/.ssh
-try 
 try echo "$adminkey" > /home/${admin}/.ssh/authorized_keys
-
 try chown -R ${admin}:${admin} /home/${admin}/.ssh 
 try chmod 700 /home/${admin}/.ssh 
 try chmod 644 /home/${admin}/.ssh/authorized_keys
+fi
 
+if [[ $deployuser =~ ^[Yy]$ ]]; then
 try  echo "$deploykey" > /home/deployment/.ssh/authorized_keys
-
 try chown -R deployment:deployment /home/deployment/.ssh 
 try chmod 700 /home/deployment/.ssh 
 try chmod 644 /home/deployment/.ssh/authorized_keys
+fi
 next
 
 step "UFW"
@@ -192,6 +201,10 @@ next
 # LAMP
 #-----------------#
 
+echo -n "Install Apache? [y/N]: "
+read -n 1 -r apache
+echo
+if [[ $apache =~ ^[Yy]$ ]]; then
 step "Apache"
 try apt-get install -y -qq apache2
 try ufw allow in "Apache Full"
@@ -215,7 +228,22 @@ try a2dissite 000-default.conf
 try systemctl restart apache2
 sleep 1
 next
+fi
 
+echo -n "Install Nginx? [y/N]: "
+read -n 1 -r nginx
+echo
+if [[ $nginx =~ ^[Yy]$ ]]; then
+step "Nginx"
+try apt-get install -y -qq nginx
+try ufw allow 'Nginx Full'
+next
+fi
+
+echo -n "Install PHP? [y/N]: "
+read -n 1 -r php
+echo
+if [[ $php =~ ^[Yy]$ ]]; then
 step "PHP"
 #try LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
 try apt-get install -y -qq php php-cli php-bcmath php-curl php-fpm php-gd php-json php-mbstring php-mysql php-odbc php-readline php-xml php-zip #libapache2-mod-php 
@@ -236,11 +264,13 @@ try systemctl daemon-reload
 try systemctl restart apache2
 try echo "php$PHP_VERSION Installed"
 next
+fi
 
 #step "SQL"
 #try apt-get install -y -qq mysql-server
 #try systemctl enable --now mysql
 #next
+
 #step "HTTPS"
 #try apt-get install -y -qq certbot python3-certbot-apache
 #try certbot --apache
@@ -251,6 +281,7 @@ next
 # Repos
 #-----------------#
 
+if [[ $deployuser =~ ^[Yy]$ ]]; then
 step "Custom Repos"
 try mkdir -p /opt/repos 
 try ln -s /opt/repos /home/deployment/repos
@@ -259,6 +290,7 @@ try chown -R deployment:deployment /opt/repos /home/deployment
 try chmod g+ws /opt/repos
 try chmod ug+wx "/opt/repos/post-receive"
 next
+fi
 
 #-----------------#
 # Kiosk Settings
